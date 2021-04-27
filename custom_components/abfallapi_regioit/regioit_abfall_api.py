@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+0
 """
 Abfall-App RegioIT API
 Based on:
@@ -46,7 +46,8 @@ BASE_URL_HLV = 'https://hlv-abfallapp.regioit.de/abfall-app-hlv'
 BASE_URL_COE = 'https://coe-abfallapp.regioit.de/abfall-app-coe'
 # Norderstedt
 BASE_URL_NDS = 'https://nds-abfallapp.regioit.de/abfall-app-nds'
-
+# Nuernberg
+BASE_URL_NBG = 'https://nuernberg-abfallapp.regioit.de/abfall-app-nuernberg'
 CITIES = {
     'Bergisch Gladbach': BASE_URL_BGL,
     'Lindlar': BASE_URL_LINDLAR,
@@ -62,7 +63,8 @@ CITIES = {
     'Guetersloh': BASE_URL_GT2,
     'Halver': BASE_URL_HLV,
     'Coesfeld': BASE_URL_COE,
-    'Norderstedt': BASE_URL_NDS
+    'Norderstedt': BASE_URL_NDS,
+    'Nürnberg' : BASE_URL_NBG
 }
 
 class RegioItAbfallApi(object):
@@ -138,17 +140,26 @@ class RegioItAbfallApi(object):
     def get_strasse_by_name(self, ort, strasse):
         return self._request('/rest/orte/{}/strassen?q={}'.format(ort, strasse))
 
+    def get_hausnummern(self, strasse_id):
+        return self._request('/rest/strassen/{}'.format(strasse_id))
+    
     def get_bezirke(self, strasse_id):
-        return self._request('/rest/strassen/{}/bezirke'.format(strasse_id))
+        return self._request('/rest/hausnummern/{}/bezirke'.format(strasse_id))
 
-    def get_termine(self, strasse_id):
+    def get_termine_by_street(self, strasse_id):
         """
-        Ruft Müllabfuhr Termine ab
+        Ruft Müllabfuhr Termine nach Straße ab
         """
         return self._request('/rest/strassen/{}/termine'.format(strasse_id))
+    
+    def get_termine_by_housenumber(self, housenumber_id):
+        """
+        Ruft Müllabfuhr Termine nach Haunummer ab
+        """
+        return self._request('/rest/strassen/{}/termine'.format(housenumber_id))
 
 def main():
-    api = RegioItAbfallApi(CITIES['Bergisch Gladbach'])
+    api = RegioItAbfallApi(CITIES['Nürnberg'])
     
     choice = 0
 
@@ -203,38 +214,62 @@ def main():
         try:
             strassen = json.loads(resp.read().decode())
             for index, entry in enumerate(strassen):
-                hausNummern = entry['hausNrList']
-                print('{}: Id: {} => {} {}'.format(index, entry['id'], entry['name'], '(HausNr: {})'.format(hausNummern)
-                    if hausNummern else ''))
+                hausnummern = entry['hausNrList']
+                print('{}: id: {} => {} {}'.format(index, entry['id'], entry['name'], '(hausnr: {})'.format(hausnummern)
+                    if hausnummern else ''))
         except:
-            _LOGGER.error('Failed to get list of STRASSEN')
+            _LOGGER.error('failed to get list of strassen')
             sys.exit(2)
 
     try:
-        choice = int(input("Choose Strassen Id: "))
+        choice = int(input("choose strassen id: "))
         if choice > len(strassen):
-            raise IndexError()
+            raise indexerror()
     except:
-        _LOGGER.error('Invalid choice on STRASSEN')
+        _LOGGER.error('invalid choice on strassen')
         sys.exit(2)
 
     strassen_name = strassen[choice]['name']
     strassen_id = strassen[choice]['id']
-    _LOGGER.info('Choosing first Strasse: {} => {}'.format(strassen_name, strassen_id))
+    _LOGGER.info('choosing first strasse: {} => {}'.format(strassen_name, strassen_id))
 
-    _LOGGER.info('Getting list of BEZIRKE')
-    with api.get_bezirke(strassen_id) as resp:
-        print('BEZIRKE:')
+    _LOGGER.info('getting list of hausnummern')
+    with api.get_hausnummern(strassen_id) as resp:
         try:
-            bezirke = json.loads(resp.read().decode())
-            for entry in bezirke:
-                print(entry)
+            print('hausnummern:')
+            strasse = json.loads(resp.read().decode())
+            hausNummern = strasse['hausNrList']
+            for index, entry in enumerate(hausNummern):
+                print('{}: id: {} => {} '.format(index, entry['id'], entry['nr']))
         except:
-            _LOGGER.error('Failed to get list of BEZIRKE')
-            sys.exit(3)
+            _LOGGER.error('failed to get list of hausnummern')
+            sys.exit(2)    
+        
+    try:
+        choice = int(input("choose hausnummer Id: "))
+        if choice > len(hausNummern):
+            raise IndexError()
+    except:
+        _LOGGER.error('Invalid choice on STRASSEN')
+        sys.exit(2)
+    
+    strassen_name += " " + hausNummern[choice]['nr']
+    strassen_id = hausNummern[choice]['id']
+    _LOGGER.info('choosing first strasse: {} => {}'.format(strassen_name, strassen_id))
+
+    # _LOGGER.info('Getting list of BEZIRKE')
+    # with api.get_bezirke(strassen_id) as resp:
+    #     print('BEZIRKE:')
+    #     try:
+    #         bezirke = json.loads(resp.read().decode())
+    #         for entry in bezirke:
+    #             print(entry)
+    #     except:
+    #         _LOGGER.error('Failed to get list of BEZIRKE')
+    #         sys.exit(3)
 
     _LOGGER.info('Getting list of TERMINE')
-    with api.get_termine(strassen_id) as resp:
+    with api.get_termine_by_housenumber(strassen_id) as resp:
         print('TERMINE:')
         try:
             termine = json.loads(resp.read().decode())

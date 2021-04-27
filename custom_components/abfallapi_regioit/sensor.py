@@ -27,12 +27,14 @@ DATE_FORMAT = '%Y-%m-%d'
 CONF_ANBIETER_ID = 'anbieter_id'
 CONF_ORT = 'ort'
 CONF_STRASSE = 'strasse'
+CONF_HAUSNUMMER = 'hausnummer'
 
 _QUERY_SCHEME = vol.Schema({
     vol.Required(CONF_NAME): cv.string,
     vol.Required(CONF_ANBIETER_ID): cv.string,
     vol.Required(CONF_ORT): cv.string,
     vol.Required(CONF_STRASSE): cv.string,
+    vol.Optional(CONF_HAUSNUMMER): cv.string,
     vol.Optional(CONF_VALUE_TEMPLATE): cv.template
 })
 
@@ -54,17 +56,19 @@ def setup_platform(
                                      base_url,
                                      config.get(CONF_ORT),
                                      config.get(CONF_STRASSE),
+                                     config.get(CONF_HAUSNUMMER),
                                      value_template)])
 
 class RegioItAbfallSensor(Entity):
 
     """Representation of a Sensor."""
-    def __init__(self, name, base_url, ort, strasse, value_template):
+    def __init__(self, name, base_url, ort, strasse, hausnummer, value_template):
         """Initialize the sensor."""
         self._name = name
 
         self._ort = ort
         self._strasse = strasse
+        self._hausnummer = hausnummer
 
         self._api = RegioItAbfallApi(base_url)
 
@@ -156,16 +160,46 @@ class RegioItAbfallSensor(Entity):
             return
         else:
             strassen_id = valid_streets[0]['id']
+        
+        if self._hausnummer is not None:
+            """
+            Get Housenumbers
+            """
+            try:
+                with self._api.get_hausnummern(strassen_id) as url:
+                    numbers = json.loads(url.read().decode())
+            except Exception as e:
+                _LOGGER.error('API call error: Hausnummern , error: {}'.format(e))
+                return
 
+            valid_numbers = [n for n in numbers if self.strip_multiple_whitespaces(s['nr']) == self._hausnummer]
+
+            if not valid_numbers:
+                _LOGGER.error('No housenumber {0} was found!'.format(self._hausnummer))
+                return
+            elif len(valid_streets) > 1:
+                _LOGGER.error('More than one match for housenumber \'{0}\' was found! Matches: {1}'.format(self._hausnummer, valid_numbers))
+                return
+            else:
+                number_id = valid_numbers[0]['id']
+            
         """
         Get Termine
         """
-        try:
+        if self._hausnummer is not None:
+            try:
+                with self._api.get_termine_by_housenumber(number_id) as url:
+                    termine = json.loads(url.read().decode())
+            except Exception as e:
+                _LOGGER.error('API call error: Termine, error: {}'.format(e))
+                return
+        else:
+            try:
             with self._api.get_termine(strassen_id) as url:
                 termine = json.loads(url.read().decode())
-        except Exception as e:
-            _LOGGER.error('API call error: Termine, error: {}'.format(e))
-            return
+            except Exception as e:
+                _LOGGER.error('API call error: Termine, error: {}'.format(e))
+                return
         
         """
         Sort Termine by date
