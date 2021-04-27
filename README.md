@@ -23,6 +23,7 @@ Supported services:
 * Halver
 * Coesfeld
 * Norderstedt
+* Nürnberg
 
 ![alt text](https://github.com/tuxuser/abfallapi_regioit_ha/blob/master/preview1.png "glance card")
 
@@ -58,6 +59,7 @@ Install the integration and restart home assistant.
   anbieter_id: KRWAF
   ort: 'Ahlen'
   strasse: 'Abtstraße'
+  hausnummer: '1'
 ```
 
 ### Customize
