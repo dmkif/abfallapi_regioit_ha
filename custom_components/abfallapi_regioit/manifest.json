@@ -1,13 +1,14 @@
 {
   "domain": "abfallapi_regioit",
   "name": "regioit api waste collection schedule",
-  "documentation": "https://github.com/tuxuser/abfallapi_regioit_ha",
+  "documentation": "https://github.com/dmkif/abfallapi_regioit_ha",
   "requirements": [],
   "homeassistant": "0.104.3",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "dependencies": [
   ],
   "codeowners": [
-    "@tuxuser"
+    "@tuxuser",
+    "@dmkif"
   ]
 }

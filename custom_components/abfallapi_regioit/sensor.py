@@ -195,11 +195,11 @@ class RegioItAbfallSensor(Entity):
                 return
         else:
             try:
-            with self._api.get_termine(strassen_id) as url:
-                termine = json.loads(url.read().decode())
-            except Exception as e:
-                _LOGGER.error('API call error: Termine, error: {}'.format(e))
-                return
+                with self._api.get_termine(strassen_id) as url:
+                    termine = json.loads(url.read().decode())
+                except Exception as e:
+                    _LOGGER.error('API call error: Termine, error: {}'.format(e))
+                    return
         
         """
         Sort Termine by date
