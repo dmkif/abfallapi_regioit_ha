@@ -156,7 +156,7 @@ class RegioItAbfallApi(object):
         """
         Ruft Müllabfuhr Termine nach Haunummer ab
         """
-        return self._request('/rest/strassen/{}/termine'.format(housenumber_id))
+        return self._request('/rest/hausnummern/{}/termine'.format(housenumber_id))
 
 def main():
     api = RegioItAbfallApi(CITIES['Nürnberg'])
@@ -233,6 +233,15 @@ def main():
     strassen_id = strassen[choice]['id']
     _LOGGER.info('choosing first strasse: {} => {}'.format(strassen_name, strassen_id))
 
+
+    try:
+        with api.get_hausnummern(strassen_id) as url:
+            numbers = json.loads(url.read().decode())
+            numbers = numbers['hausNrList']
+    except Exception as e:
+        _LOGGER.error('API call error: Hausnummern , error: {}'.format(e))
+        return
+    
     _LOGGER.info('getting list of hausnummern')
     with api.get_hausnummern(strassen_id) as resp:
         try:

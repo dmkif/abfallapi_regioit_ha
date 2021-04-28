@@ -167,12 +167,12 @@ class RegioItAbfallSensor(Entity):
             """
             try:
                 with self._api.get_hausnummern(strassen_id) as url:
-                    numbers = json.loads(url.read().decode())
+                    numbers = json.loads(url.read().decode())['hausNrList']
             except Exception as e:
                 _LOGGER.error('API call error: Hausnummern , error: {}'.format(e))
                 return
 
-            valid_numbers = [n for n in numbers if self.strip_multiple_whitespaces(s['nr']) == self._hausnummer]
+            valid_numbers = [n for n in numbers if self.strip_multiple_whitespaces(n['nr']) == self._hausnummer]
 
             if not valid_numbers:
                 _LOGGER.error('No housenumber {0} was found!'.format(self._hausnummer))
